@@ -135,6 +135,125 @@ def editar_producto(codigo):
     return render_template("editar_producto.html", producto=producto, tipos=tipos)
 
 # ------------------------------
+# Flujo de productos (ventas, compras, devoluciones)
+# ------------------------------
+
+@app.route("/flujo")
+def flujo_productos():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+    return render_template("flujo_menu.html")
+
+@app.route("/flujo/<accion>", methods=["GET", "POST"])
+def flujo_accion(accion):
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    productos = cargar_json("productos.json")
+    devoluciones = cargar_json("devoluciones.json")
+
+    if "carrito" not in session:
+        session["carrito"] = []
+
+    carrito = session["carrito"]
+    tipos = ["aseo personal", "hogar", "otros"]
+
+    query = request.args.get("q", "").strip().lower()
+    tipo_filtro = request.args.get("tipo", "").strip().lower()
+
+    filtrados = [
+        p for p in productos
+        if (not query or query in p["nombre"].lower() or query in p["codigo"].lower())
+        and (not tipo_filtro or p["tipo"].lower() == tipo_filtro)
+    ]
+
+    if request.method == "POST":
+        if "finalizar" in request.form:
+            if not carrito:
+                flash("No hay productos en la lista para procesar.", "warning")
+                return redirect(url_for("flujo_accion", accion=accion))
+
+            total = 0
+            for item in carrito:
+                producto = next((p for p in productos if p["codigo"] == item["codigo"]), None)
+                if not producto:
+                    continue
+                if accion == "venta":
+                    if producto["cantidad"] < item["cantidad"]:
+                        flash(f"Stock insuficiente para {producto['nombre']}.", "danger")
+                        continue
+                    producto["cantidad"] -= item["cantidad"]
+                elif accion == "compra":
+                    producto["cantidad"] += item["cantidad"]
+                elif accion == "devolucion":
+                    producto["cantidad"] += item["cantidad"]
+                    devoluciones.append({
+                        "nombre": producto["nombre"],
+                        "codigo": producto["codigo"],
+                        "cantidad": item["cantidad"],
+                        "tipo": producto["tipo"],
+                        "descripcion": item.get("descripcion", "")
+                    })
+                total += producto["precio"] * item["cantidad"]
+
+            guardar_json("productos.json", productos)
+            guardar_json("devoluciones.json", devoluciones)
+            session["carrito"] = []
+            flash(f"{accion.capitalize()} finalizada correctamente. Total ${total:.2f}", "success")
+            return redirect(url_for("flujo_accion", accion=accion))
+
+        elif "codigo" in request.form:
+            codigo = request.form["codigo"]
+            cantidad = int(request.form["cantidad"])
+            producto = next((p for p in productos if p["codigo"] == codigo), None)
+            if not producto:
+                flash("Producto no encontrado.", "danger")
+            else:
+                if accion == "venta" and producto["cantidad"] < cantidad:
+                    flash("Stock insuficiente para la venta.", "danger")
+                else:
+                    item = {
+                        "nombre": producto["nombre"],
+                        "codigo": producto["codigo"],
+                        "cantidad": cantidad,
+                        "precio": producto["precio"],
+                        "tipo": producto["tipo"]
+                    }
+                    if accion == "devolucion":
+                        item["descripcion"] = request.form.get("descripcion", "")
+                    carrito.append(item)
+                    session["carrito"] = carrito
+                    flash(f"{producto['nombre']} agregado al listado.", "info")
+            return redirect(url_for("flujo_accion", accion=accion))
+
+    total = sum(i["precio"] * i["cantidad"] for i in carrito)
+    return render_template("flujo_accion.html", accion=accion, productos=filtrados, tipos=tipos, carrito=carrito, total=total, query=query, tipo_filtro=tipo_filtro)
+
+# ------------------------------
+# Devoluciones
+# ------------------------------
+
+@app.route("/devoluciones", methods=["GET", "POST"])
+def devoluciones():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    devoluciones = cargar_json("devoluciones.json")
+
+    if request.method == "POST":
+        if "eliminar_todas" in request.form:
+            guardar_json("devoluciones.json", [])
+            flash("Todas las devoluciones fueron eliminadas.", "info")
+        elif "codigo" in request.form:
+            codigo = request.form["codigo"]
+            devoluciones = [d for d in devoluciones if d["codigo"] != codigo]
+            guardar_json("devoluciones.json", devoluciones)
+            flash("Devolución eliminada correctamente.", "success")
+        return redirect(url_for("devoluciones"))
+
+    return render_template("devoluciones.html", devoluciones=devoluciones)
+
+# ------------------------------
 # Otras secciones
 # ------------------------------
 
