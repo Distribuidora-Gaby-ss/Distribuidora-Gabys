@@ -80,6 +80,24 @@ def productos():
 
     return render_template("productos.html", productos=productos)
 
+@app.route("/productos/eliminar/<codigo>", methods=["POST"])
+def eliminar_producto(codigo):
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    productos = cargar_json("productos.json")
+    producto = next((p for p in productos if p["codigo"] == codigo), None)
+
+    if not producto:
+        flash("Producto no encontrado.", "danger")
+    else:
+        productos = [p for p in productos if p["codigo"] != codigo]
+        guardar_json("productos.json", productos)
+        flash(f"Producto '{producto['nombre']}' eliminado correctamente.", "success")
+
+    return redirect(url_for("productos"))
+
+
 # ------------------------------
 # Ejecutar aplicación
 # ------------------------------
