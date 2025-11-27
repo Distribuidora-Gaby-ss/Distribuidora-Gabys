@@ -57,9 +57,8 @@ def login():
 
 @app.route("/logout")
 def logout():
-    session.pop("usuario", None)
-    session.pop("carrito", None)
-    flash("Has cerrado sesión correctamente.", "info")
+    session.clear()  # Limpia todos los datos de sesión
+    flash("Sesión cerrada exitosamente", "success")
     return redirect(url_for("login"))
 
 
