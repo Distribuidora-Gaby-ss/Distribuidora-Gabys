@@ -9,7 +9,6 @@ BASE_DIR = os.path.join(os.path.dirname(__file__), "data")
 # ------------------------------
 # Funciones auxiliares
 # ------------------------------
-
 def cargar_json(nombre_archivo):
     ruta = os.path.join(BASE_DIR, nombre_archivo)
     if not os.path.exists(ruta):
