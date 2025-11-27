@@ -20,6 +20,11 @@ def cargar_json(nombre_archivo):
         except json.JSONDecodeError:
             return []
 
+def guardar_json(nombre_archivo, data):
+    ruta = os.path.join(BASE_DIR, nombre_archivo)
+    with open(ruta, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
 # ------------------------------
 # Rutas principales
 # ------------------------------
