@@ -294,7 +294,43 @@ def alertas():
     alertas = cargar_json("alertas.json")
     return render_template("alertas.html", alertas=alertas)
 
+@app.route("/reportes")
+def reportes():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
 
+    productos = cargar_json("productos.json")
+    alertas = cargar_json("alertas.json")
+    ventas = cargar_json("ventas.json")
+    compras = cargar_json("compras.json")
+    devoluciones = cargar_json("devoluciones.json")
+
+    total_productos = len(productos)
+    total_unidades = sum(p["cantidad"] for p in productos) if productos else 0
+    valor_inventario = sum(p["cantidad"] * p["precio"] for p in productos) if productos else 0
+
+    total_alertas = len(alertas)
+    por_tipo = {
+        "aseo personal": len([p for p in productos if p["tipo"] == "aseo personal"]),
+        "hogar": len([p for p in productos if p["tipo"] == "hogar"]),
+        "otros": len([p for p in productos if p["tipo"] == "otros"])
+    }
+
+    ultimas_ventas = ventas[-5:] if ventas else []
+    ultimas_compras = compras[-5:] if compras else []
+    ultimas_devoluciones = devoluciones[-5:] if devoluciones else []
+
+    return render_template(
+        "reportes.html",
+        total_productos=total_productos,
+        total_unidades=total_unidades,
+        valor_inventario=valor_inventario,
+        total_alertas=total_alertas,
+        por_tipo=por_tipo,
+        ultimas_ventas=ultimas_ventas,
+        ultimas_compras=ultimas_compras,
+        ultimas_devoluciones=ultimas_devoluciones
+    )
 
 # ------------------------------
 # Ejecutar aplicación
