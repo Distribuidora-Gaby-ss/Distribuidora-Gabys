@@ -1,10 +1,17 @@
 [
     {
         "usuario": "admin",
-        "password": "1234"
+        "password": "1234",
+        "rol": "admin"
     },
     {
-        "usuario": "gaby",
-        "password": "ventas2025"
+        "usuario": "pepe",
+        "password": "123",
+        "rol": "consultor"
+    },
+    {
+        "usuario": "Esteban",
+        "password": "12345",
+        "rol": "consultor"
     }
 ]

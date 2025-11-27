@@ -39,7 +39,8 @@ def index():
 def menu():
     if "usuario" not in session:
         return redirect(url_for("login"))
-    return render_template("index.html", usuario=session["usuario"])
+    return render_template("index.html", usuario=session["usuario"],
+        rol=session.get("rol", "admin"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -51,13 +52,10 @@ def login():
         for u in usuarios:
             if u["usuario"] == user and u["password"] == pwd:
                 session["usuario"] = user
-                flash("Inicio de sesión exitoso", "success")
-                # Redirige a /menu según lo que espera el test
+                session["rol"] = u["rol"]  # <-- IMPORTANTE
+                flash("Inicio de sesión exitoso.", "success")
                 return redirect(url_for("menu"))
-
-        # Mensaje exacto esperado por el test
-        flash("Credenciales incorrectas", "danger")
-
+        flash("Usuario o contraseña incorrectos", "danger")
     return render_template("login.html")
 
 @app.route("/logout")
@@ -163,6 +161,41 @@ def editar_producto(codigo):
         return redirect(url_for("productos"))
 
     return render_template("editar_producto.html", producto=producto, tipos=tipos)
+
+
+@app.route("/usuarios/nuevo", methods=["GET", "POST"])
+def nuevo_usuario():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    # Solo admin puede crear usuarios
+    if session["rol"] != "admin":
+        flash("No tienes permisos para acceder a esta sección.", "danger")
+        return redirect(url_for("menu"))
+
+    roles = ["admin", "consultor"]
+
+    if request.method == "POST":
+        usuarios = cargar_json("usuarios.json")
+
+        nuevo = {
+            "usuario": request.form["usuario"],
+            "password": request.form["password"],
+            "rol": request.form["rol"]
+        }
+
+        # Validar duplicados
+        if any(u["usuario"] == nuevo["usuario"] for u in usuarios):
+            flash("Este usuario ya existe.", "danger")
+            return redirect(url_for("nuevo_usuario"))
+
+        usuarios.append(nuevo)
+        guardar_json("usuarios.json", usuarios)
+
+        flash("Usuario creado exitosamente.", "success")
+        return redirect(url_for("menu"))
+
+    return render_template("nuevo_usuario.html", roles=roles)
 
 # ------------------------------
 # Flujo de productos (ventas, compras, devoluciones)
