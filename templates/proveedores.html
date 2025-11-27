@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Proveedores{% endblock %}
+{% block contenido %}
+<div class="container">
+    <h2 class="titulo">🚚 Lista de Proveedores</h2>
+
+    <div class="acciones-superiores">
+        <a href="{{ url_for('index') }}" class="btn-volver">🏠 Volver al Menú Principal</a>
+        <a href="{{ url_for('nuevo_proveedor') }}" class="btn-agregar">➕ Nuevo Proveedor</a>
+    </div>
+
+    <!-- Filtro -->
+    <form method="get" action="{{ url_for('proveedores') }}" class="busqueda-form">
+        <input type="text" name="q" placeholder="Buscar por empresa o encargado..." class="input-busqueda" value="{{ request.args.get('q','') }}">
+
+        <select name="tipo" class="select-filtro">
+            <option value="todos">Todos los tipos</option>
+            {% for t in tipos %}
+                <option value="{{ t }}" {% if request.args.get('tipo') == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn-buscar">🔍 Buscar</button>
+    </form>
+
+    <table class="tabla">
+        <thead>
+            <tr>
+                <th>Empresa</th>
+                <th>Encargado</th>
+                <th>Contacto</th>
+                <th>Tipo de Producto</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in proveedores %}
+            <tr>
+                <td>{{ p.empresa }}</td>
+                <td>{{ p.encargado }}</td>
+                <td>{{ p.contacto }}</td>
+                <td>{{ p.tipo }}</td>
+            </tr>
+            {% endfor %}
+            {% if proveedores|length == 0 %}
+            <tr>
+                <td colspan="4" class="texto-vacio">No se encontraron proveedores.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
