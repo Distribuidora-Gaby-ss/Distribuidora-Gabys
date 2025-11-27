@@ -20,10 +20,6 @@
             <button type="submit" class="btn-buscar">🔍 Buscar</button>
             <a href="{{ url_for('nuevo_producto') }}" class="btn-mini">➕ Nuevo Producto</a>
             <a href="{{ url_for('exportar_excel')}}" class="btn-mini"> Exportar Excel</a>
-            <form action="/importar_txt" method="POST" enctype="multipart/form-data" style="display:inline-block;">
-            <input type="file" name="archivo_txt" accept=".txt" required>
-            <button type="submit" class="btn btn-success">Importar TXT</button>
-            </form>
         </form>
     </div>
 

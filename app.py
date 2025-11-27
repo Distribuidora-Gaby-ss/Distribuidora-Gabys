@@ -3,9 +3,6 @@ import json, os
 from openpyxl import Workbook
 from flask import send_file
 import io
-import io
-import csv
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = "distribuidora_gabys_2025"
@@ -55,70 +52,6 @@ def exportar_excel():
         download_name="inventario.xlsx",
         as_attachment=True
     )
-
-@app.route("/importar_txt", methods=["POST"])
-def importar_txt():
-    archivo = request.files.get("archivo_txt")
-
-    if not archivo:
-        flash("No seleccionaste ningún archivo.", "error")
-        return redirect(url_for("productos"))
-
-    nombre_archivo = secure_filename(archivo.filename)
-
-    if not nombre_archivo.endswith(".txt"):
-        flash("El archivo debe ser un .txt válido.", "error")
-        return redirect(url_for("productos"))
-
-    # Cargar productos existentes
-    productos = cargar_json("productos.json")
-
-    try:
-        contenido = archivo.read().decode("utf-8").splitlines()
-
-        agregados = 0
-        ignorados = 0
-
-        for linea in contenido:
-            partes = linea.split(",")
-
-            if len(partes) != 5:
-                ignorados += 1
-                continue
-
-            nombre, codigo, cantidad, precio, tipo = [p.strip() for p in partes]
-
-            try:
-                cantidad = int(cantidad)
-                precio = float(precio)
-            except:
-                ignorados += 1
-                continue
-
-            # Evitar duplicados
-            if any(p["codigo"] == codigo for p in productos):
-                ignorados += 1
-                continue
-
-            productos.append({
-                "nombre": nombre,
-                "codigo": codigo,
-                "cantidad": cantidad,
-                "precio": precio,
-                "tipo": tipo
-            })
-
-            agregados += 1
-
-        # GUARDAR CORRECTAMENTE
-        guardar_json("productos.json", productos)
-
-        flash(f"Importación completada. Agregados: {agregados}, Ignorados: {ignorados}", "success")
-
-    except Exception as e:
-        flash(f"Error al procesar el archivo: {e}", "error")
-
-    return redirect(url_for("productos"))
     
 @app.route("/")
 def index():
