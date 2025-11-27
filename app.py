@@ -97,6 +97,38 @@ def eliminar_producto(codigo):
 
     return redirect(url_for("productos"))
 
+@app.route("/productos/editar/<codigo>", methods=["GET", "POST"])
+def editar_producto(codigo):
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    productos = cargar_json("productos.json")
+    producto = next((p for p in productos if p["codigo"] == codigo), None)
+
+    if not producto:
+        flash("Producto no encontrado.", "danger")
+        return redirect(url_for("productos"))
+
+    tipos = ["aseo personal", "hogar", "otros"]
+
+    if request.method == "POST":
+        nuevo_codigo = request.form["codigo"]
+        if nuevo_codigo != codigo and any(p["codigo"] == nuevo_codigo for p in productos):
+            flash("Ya existe otro producto con ese código.", "danger")
+            return redirect(url_for("editar_producto", codigo=codigo))
+
+        producto["nombre"] = request.form["nombre"]
+        producto["codigo"] = nuevo_codigo
+        producto["cantidad"] = int(request.form["cantidad"])
+        producto["precio"] = float(request.form["precio"])
+        producto["tipo"] = request.form["tipo"]
+
+        guardar_json("productos.json", productos)
+        flash("Producto actualizado correctamente.", "success")
+        return redirect(url_for("productos"))
+
+    return render_template("editar_producto.html", producto=producto, tipos=tipos)
+
 
 # ------------------------------
 # Ejecutar aplicación
