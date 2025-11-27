@@ -21,5 +21,16 @@
             ↩️ <span>Devoluciones</span>
         </a>
     </div>
+    {% if rol == 'consultor' %}
+        <small class="text-muted d-block mt-3">
+            🔒 Modo consulta: Solo lectura habilitada
+        </small>
+    {% endif %}
+
+    {% if rol == 'admin' %}
+        <a href="/usuarios/nuevo" class="btn btn-secondary mt-3">➕ Crear usuario</a>
+    {% endif %}
 </div>
 {% endblock %}
+
+
