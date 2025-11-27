@@ -5,21 +5,37 @@
     <h2 class="titulo">Menú principal</h2>
 
     <div class="card-menu">
+
+        <!-- Flujo de productos -->
         <a href="{{ url_for('flujo_productos') }}" class="btn-menu">
             🌀 <span>Flujo de Productos</span>
         </a>
+
+        <!-- Productos -->
         <a href="{{ url_for('productos') }}" class="btn-menu">
             📦 <span>Productos</span>
         </a>
+
+        <!-- Alertas -->
         <a href="{{ url_for('alertas') }}" class="btn-menu">
             ⚠️ <span>Alertas</span>
         </a>
+
+        <!-- Reportes -->
         <a href="{{ url_for('reportes') }}" class="btn-menu">
             📊 <span>Reportes</span>
         </a>
+
+        <!-- Devoluciones -->
         <a href="{{ url_for('devoluciones') }}" class="btn-menu">
             ↩️ <span>Devoluciones</span>
         </a>
+
+        <!-- Nuevo botón: Proveedores -->
+        <a href="{{ url_for('proveedores') }}" class="btn-menu">
+            🧾 <span>Proveedores</span>
+        </a>
+
     </div>
 </div>
 {% endblock %}

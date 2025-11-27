@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Nuevo Proveedor{% endblock %}
+{% block contenido %}
+<div class="container">
+    <h2 class="titulo">➕ Registrar Nuevo Proveedor</h2>
+
+    <a href="{{ url_for('proveedores') }}" class="btn-volver">⬅ Volver</a>
+
+    <form method="post" class="formulario">
+        <label>Nombre de la Empresa:</label>
+        <input type="text" name="empresa" required>
+
+        <label>Nombre del Encargado:</label>
+        <input type="text" name="encargado" required>
+
+        <label>Contacto:</label>
+        <input type="text" name="contacto" required>
+
+        <label>Tipo de Producto que Distribuye:</label>
+        <select name="tipo">
+            {% for t in tipos %}
+                <option value="{{ t }}">{{ t }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn-guardar">💾 Guardar Proveedor</button>
+    </form>
+</div>
+{% endblock %}
