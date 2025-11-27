@@ -221,6 +221,56 @@ def nuevo_usuario():
 
     return render_template("nuevo_usuario.html", roles=roles)
 
+@app.route("/proveedores")
+def proveedores():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    proveedores = cargar_json("proveedores.json")
+    tipos = ["aseo personal", "hogar", "otros"]
+
+    # Búsqueda
+    query = request.args.get("q", "").strip().lower()
+    tipo_filtro = request.args.get("tipo", "").strip().lower()
+
+    if query:
+        proveedores = [
+            p for p in proveedores
+            if query in p["empresa"].lower() or query in p["encargado"].lower()
+        ]
+
+    if tipo_filtro and tipo_filtro != "todos":
+        proveedores = [p for p in proveedores if p["tipo"] == tipo_filtro]
+
+    return render_template("proveedores.html", proveedores=proveedores, tipos=tipos)
+
+@app.route("/proveedores/nuevo", methods=["GET", "POST"])
+def nuevo_proveedor():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    tipos = ["aseo personal", "hogar", "otros"]
+
+    if request.method == "POST":
+        proveedores = cargar_json("proveedores.json")
+
+        nuevo = {
+            "empresa": request.form["empresa"],
+            "encargado": request.form["encargado"],
+            "contacto": request.form["contacto"],
+            "tipo": request.form["tipo"]
+        }
+
+        proveedores.append(nuevo)
+        guardar_json("proveedores.json", proveedores)
+
+        flash("Proveedor agregado correctamente.", "success")
+        return redirect(url_for("proveedores"))
+
+    return render_template("nuevo_proveedor.html", tipos=tipos)
+
+
+
 # ------------------------------
 # Flujo de productos (ventas, compras, devoluciones)
 # ------------------------------
