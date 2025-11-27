@@ -1,5 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import json, os
+from openpyxl import Workbook
+from flask import send_file
+import io
 
 app = Flask(__name__)
 app.secret_key = "distribuidora_gabys_2025"
@@ -28,7 +31,28 @@ def guardar_json(nombre_archivo, data):
 # ------------------------------
 # Rutas principales
 # ------------------------------
+@app.route("/exportar_excel")
+def exportar_excel():
+    productos = cargar_json("productos.json")   # ← AQUÍ EL ARREGLO
 
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Inventario"
+
+    ws.append(["Nombre", "Código", "Cantidad", "Precio", "Tipo"])
+
+    for p in productos:
+        ws.append([p["nombre"], p["codigo"], p["cantidad"], p["precio"], p["tipo"]])
+
+    ruta_archivo = "/tmp/inventario.xlsx"
+    wb.save(ruta_archivo)
+
+    return send_file(
+        ruta_archivo,
+        download_name="inventario.xlsx",
+        as_attachment=True
+    )
+    
 @app.route("/")
 def index():
     if "usuario" in session:
@@ -39,7 +63,8 @@ def index():
 def menu():
     if "usuario" not in session:
         return redirect(url_for("login"))
-    return render_template("index.html", usuario=session["usuario"])
+    return render_template("index.html", usuario=session["usuario"],
+        rol=session.get("rol", "admin"))
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -51,13 +76,10 @@ def login():
         for u in usuarios:
             if u["usuario"] == user and u["password"] == pwd:
                 session["usuario"] = user
-                flash("Inicio de sesión exitoso", "success")
-                # Redirige a /menu según lo que espera el test
+                session["rol"] = u["rol"]  # <-- IMPORTANTE
+                flash("Inicio de sesión exitoso.", "success")
                 return redirect(url_for("menu"))
-
-        # Mensaje exacto esperado por el test
-        flash("Credenciales incorrectas", "danger")
-
+        flash("Usuario o contraseña incorrectos", "danger")
     return render_template("login.html")
 
 @app.route("/logout")
@@ -163,6 +185,91 @@ def editar_producto(codigo):
         return redirect(url_for("productos"))
 
     return render_template("editar_producto.html", producto=producto, tipos=tipos)
+
+
+@app.route("/usuarios/nuevo", methods=["GET", "POST"])
+def nuevo_usuario():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    # Solo admin puede crear usuarios
+    if session["rol"] != "admin":
+        flash("No tienes permisos para acceder a esta sección.", "danger")
+        return redirect(url_for("menu"))
+
+    roles = ["admin", "consultor"]
+
+    if request.method == "POST":
+        usuarios = cargar_json("usuarios.json")
+
+        nuevo = {
+            "usuario": request.form["usuario"],
+            "password": request.form["password"],
+            "rol": request.form["rol"]
+        }
+
+        # Validar duplicados
+        if any(u["usuario"] == nuevo["usuario"] for u in usuarios):
+            flash("Este usuario ya existe.", "danger")
+            return redirect(url_for("nuevo_usuario"))
+
+        usuarios.append(nuevo)
+        guardar_json("usuarios.json", usuarios)
+
+        flash("Usuario creado exitosamente.", "success")
+        return redirect(url_for("menu"))
+
+    return render_template("nuevo_usuario.html", roles=roles)
+
+@app.route("/proveedores")
+def proveedores():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    proveedores = cargar_json("proveedores.json")
+    tipos = ["aseo personal", "hogar", "otros"]
+
+    # Búsqueda
+    query = request.args.get("q", "").strip().lower()
+    tipo_filtro = request.args.get("tipo", "").strip().lower()
+
+    if query:
+        proveedores = [
+            p for p in proveedores
+            if query in p["empresa"].lower() or query in p["encargado"].lower()
+        ]
+
+    if tipo_filtro and tipo_filtro != "todos":
+        proveedores = [p for p in proveedores if p["tipo"] == tipo_filtro]
+
+    return render_template("proveedores.html", proveedores=proveedores, tipos=tipos)
+
+@app.route("/proveedores/nuevo", methods=["GET", "POST"])
+def nuevo_proveedor():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+
+    tipos = ["aseo personal", "hogar", "otros"]
+
+    if request.method == "POST":
+        proveedores = cargar_json("proveedores.json")
+
+        nuevo = {
+            "empresa": request.form["empresa"],
+            "encargado": request.form["encargado"],
+            "contacto": request.form["contacto"],
+            "tipo": request.form["tipo"]
+        }
+
+        proveedores.append(nuevo)
+        guardar_json("proveedores.json", proveedores)
+
+        flash("Proveedor agregado correctamente.", "success")
+        return redirect(url_for("proveedores"))
+
+    return render_template("nuevo_proveedor.html", tipos=tipos)
+
+
 
 # ------------------------------
 # Flujo de productos (ventas, compras, devoluciones)
@@ -294,7 +401,43 @@ def alertas():
     alertas = cargar_json("alertas.json")
     return render_template("alertas.html", alertas=alertas)
 
+@app.route("/reportes")
+def reportes():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
 
+    productos = cargar_json("productos.json")
+    alertas = cargar_json("alertas.json")
+    ventas = cargar_json("ventas.json")
+    compras = cargar_json("compras.json")
+    devoluciones = cargar_json("devoluciones.json")
+
+    total_productos = len(productos)
+    total_unidades = sum(p["cantidad"] for p in productos) if productos else 0
+    valor_inventario = sum(p["cantidad"] * p["precio"] for p in productos) if productos else 0
+
+    total_alertas = len(alertas)
+    por_tipo = {
+        "aseo personal": len([p for p in productos if p["tipo"] == "aseo personal"]),
+        "hogar": len([p for p in productos if p["tipo"] == "hogar"]),
+        "otros": len([p for p in productos if p["tipo"] == "otros"])
+    }
+
+    ultimas_ventas = ventas[-5:] if ventas else []
+    ultimas_compras = compras[-5:] if compras else []
+    ultimas_devoluciones = devoluciones[-5:] if devoluciones else []
+
+    return render_template(
+        "reportes.html",
+        total_productos=total_productos,
+        total_unidades=total_unidades,
+        valor_inventario=valor_inventario,
+        total_alertas=total_alertas,
+        por_tipo=por_tipo,
+        ultimas_ventas=ultimas_ventas,
+        ultimas_compras=ultimas_compras,
+        ultimas_devoluciones=ultimas_devoluciones
+    )
 
 # ------------------------------
 # Ejecutar aplicación
