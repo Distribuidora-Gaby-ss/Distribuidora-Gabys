@@ -1,5 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import json, os
+from openpyxl import Workbook
+from flask import send_file
+import io
 
 app = Flask(__name__)
 app.secret_key = "distribuidora_gabys_2025"
@@ -28,7 +31,28 @@ def guardar_json(nombre_archivo, data):
 # ------------------------------
 # Rutas principales
 # ------------------------------
+@app.route("/exportar_excel")
+def exportar_excel():
+    productos = cargar_json("productos.json")   # ← AQUÍ EL ARREGLO
 
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Inventario"
+
+    ws.append(["Nombre", "Código", "Cantidad", "Precio", "Tipo"])
+
+    for p in productos:
+        ws.append([p["nombre"], p["codigo"], p["cantidad"], p["precio"], p["tipo"]])
+
+    ruta_archivo = "/tmp/inventario.xlsx"
+    wb.save(ruta_archivo)
+
+    return send_file(
+        ruta_archivo,
+        download_name="inventario.xlsx",
+        as_attachment=True
+    )
+    
 @app.route("/")
 def index():
     if "usuario" in session:
