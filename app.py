@@ -134,6 +134,18 @@ def editar_producto(codigo):
 
     return render_template("editar_producto.html", producto=producto, tipos=tipos)
 
+# ------------------------------
+# Otras secciones
+# ------------------------------
+
+@app.route("/alertas")
+def alertas():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+    alertas = cargar_json("alertas.json")
+    return render_template("alertas.html", alertas=alertas)
+
+
 
 # ------------------------------
 # Ejecutar aplicación
