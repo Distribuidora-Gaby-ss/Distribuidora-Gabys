@@ -11,7 +11,12 @@
     <div class="form-filtros">
         <form method="get" action="{{ url_for('productos') }}">
             <input type="text" name="q" class="input-text" placeholder="Buscar por nombre o código..." value="{{ request.args.get('q', '') }}">
-            
+            <select name="tipo" class="input-select">
+                <option value="">Todos los tipos</option>
+                <option value="aseo personal" {% if request.args.get('tipo') == 'aseo personal' %}selected{% endif %}>Aseo Personal</option>
+                <option value="hogar" {% if request.args.get('tipo') == 'hogar' %}selected{% endif %}>Hogar</option>
+                <option value="otros" {% if request.args.get('tipo') == 'otros' %}selected{% endif %}>Otros</option>
+            </select>
             <button type="submit" class="btn-buscar">🔍 Buscar</button>
             <a href="{{ url_for('nuevo_producto') }}" class="btn-mini">➕ Nuevo Producto</a>
         </form>
