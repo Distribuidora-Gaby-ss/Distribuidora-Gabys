@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block contenido %}
+
+<div class="container mt-4" style="max-width: 600px;">
+    <h3 class="text-center mb-4">Crear Usuario</h3>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div class="mb-3">
+            <label class="form-label">Usuario</label>
+            <input type="text" name="usuario" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Contraseña</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Rol</label>
+            <select name="rol" class="form-select" required>
+                {% for r in roles %}
+                    <option value="{{ r }}">{{ r|capitalize }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Crear Usuario</button>
+    </form>
+</div>
+
+{% endblock %}
