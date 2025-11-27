@@ -62,6 +62,23 @@ def logout():
     flash("Has cerrado sesión correctamente.", "info")
     return redirect(url_for("login"))
 
+
+# ------------------------------
+# Gestión de productos
+# ------------------------------
+
+@app.route("/productos")
+def productos():
+    if "usuario" not in session:
+        return redirect(url_for("login"))
+    productos = cargar_json("productos.json")
+
+    query = request.args.get("q", "").strip().lower()
+    tipo_filtro = request.args.get("tipo", "").strip().lower()
+    
+
+    return render_template("productos.html", productos=productos)
+
 # ------------------------------
 # Ejecutar aplicación
 # ------------------------------
